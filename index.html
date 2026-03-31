@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Paysage Gyroscope</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #87CEEB;
+      font-family: sans-serif;
+    }
+
+    .layer {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      transition: transform 0.05s ease-out; /* lissage du mouvement */
+    }
+
+    #sky { background: linear-gradient(#87CEEB, #ffffff); }
+    #mountains { background: #6b8e23; top: 30%; height: 40%; }
+    #foreground { background: #228B22; top: 60%; height: 40%; }
+
+    #button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px;
+      background: white;
+      border: 1px solid black;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    #message {
+      position: fixed;
+      top: 70px;
+      left: 20px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
+      border: 1px solid black;
+      z-index: 10;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<button id="button">Activer le gyroscope</button>
+<div id="message">Bouge ton iPhone pour tester le gyroscope !</div>
+
+<div id="sky" class="layer"></div>
+<div id="mountains" class="layer"></div>
+<div id="foreground" class="layer"></div>
+
+<script>
+const sky = document.getElementById("sky");
+const mountains = document.getElementById("mountains");
+const foreground = document.getElementById("foreground");
+const message = document.getElementById("message");
+
+let lastX = 0, lastY = 0;
+
+function handleOrientation(event) {
+  // Lisser le mouvement
+  const x = event.gamma; 
+  const y = event.beta; 
+  lastX += (x - lastX) * 0.1;
+  lastY += (y - lastY) * 0.1;
+
+  sky.style.transform = `translate(${lastX * 1}px, ${lastY * 1}px)`;
+  mountains.style.transform = `translate(${lastX * 3}px, ${lastY * 2}px)`;
+  foreground.style.transform = `translate(${lastX * 6}px, ${lastY * 4}px)`;
+
+  message.style.display = "block";
+}
+
+// Fonction pour activer le gyroscope
+function enableGyro() {
+  if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === "granted") {
+          window.addEventListener("deviceorientation", handleOrientation);
+          message.innerText = "Gyroscope activé ! Bouge ton iPhone.";
+        } else {
+          message.innerText = "Permission refusée. Impossible d’utiliser le gyroscope.";
+          message.style.display = "block";
+        }
+      })
+      .catch(err => {
+        message.innerText = "Erreur : " + err;
+        message.style.display = "block";
+      });
+  } else {
+    // Android / navigateur non iOS
+    window.addEventListener("deviceorientation", handleOrientation);
+    message.innerText = "Gyroscope activé automatiquement.";
+    message.style.display = "block";
+  }
+}
+
+// Bouton
+document.getElementById("button").onclick = enableGyro;
+</script>
+
+</body>
+</html>
