@@ -7,12 +7,13 @@
 <style>
 body {
   margin: 0;
-  overflow: hidden;
+  overflow: auto; /* IMPORTANT → autorise le scroll */
+  height: 200vh; /* permet de scroller */
 }
 
-/* Couches du paysage */
+/* Couches */
 .layer {
-  position: absolute;
+  position: fixed; /* reste à l'écran */
   width: 200%;
   height: 200%;
   background-size: cover;
@@ -24,7 +25,7 @@ body {
 #mountains { background-image: url('mountains.png'); top: 30%; z-index: 2; }
 #foreground { background-image: url('foreground.png'); top: 60%; z-index: 3; }
 
-/* Bouton noir */
+/* Bouton */
 #startBtn {
   position: fixed;
   bottom: 20px;
@@ -55,19 +56,30 @@ const mountains = document.getElementById("mountains");
 const foreground = document.getElementById("foreground");
 const button = document.getElementById("startBtn");
 
-let lastX = 0, lastY = 0;
+let gyroX = 0, gyroY = 0;
+let smoothX = 0, smoothY = 0;
 
-function handleOrientation(event) {
-  const x = event.gamma;
-  const y = event.beta;
+function updateScene() {
+  const scrollY = window.scrollY;
+
+  // Combinaison scroll + gyroscope
+  const x = gyroX;
+  const y = gyroY + scrollY * 0.2;
 
   // Lissage
-  lastX += (x - lastX) * 0.1;
-  lastY += (y - lastY) * 0.1;
+  smoothX += (x - smoothX) * 0.1;
+  smoothY += (y - smoothY) * 0.1;
 
-  sky.style.transform = `translate(${lastX * 1}px, ${lastY * 1}px)`;
-  mountains.style.transform = `translate(${lastX * 3}px, ${lastY * 2}px)`;
-  foreground.style.transform = `translate(${lastX * 6}px, ${lastY * 4}px)`;
+  sky.style.transform = `translate(${smoothX * 1}px, ${smoothY * 1}px)`;
+  mountains.style.transform = `translate(${smoothX * 3}px, ${smoothY * 2}px)`;
+  foreground.style.transform = `translate(${smoothX * 6}px, ${smoothY * 4}px)`;
+
+  requestAnimationFrame(updateScene);
+}
+
+function handleOrientation(event) {
+  gyroX = event.gamma;
+  gyroY = event.beta;
 }
 
 function enableGyro() {
@@ -76,12 +88,9 @@ function enableGyro() {
       .then(response => {
         if (response === "granted") {
           window.addEventListener("deviceorientation", handleOrientation);
-          button.style.display = "none"; // cache le bouton après activation
-        } else {
-          alert("Permission refusée");
+          button.style.display = "none";
         }
-      })
-      .catch(console.error);
+      });
   } else {
     window.addEventListener("deviceorientation", handleOrientation);
     button.style.display = "none";
@@ -89,6 +98,9 @@ function enableGyro() {
 }
 
 button.addEventListener("click", enableGyro);
+
+// Lance l’animation en continu
+updateScene();
 </script>
 
 </body>
