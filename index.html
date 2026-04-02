@@ -13,6 +13,7 @@
 <div id="scene">
   <div id="sky" class="layer"></div>
   <div id="mountains" class="layer"></div>
+  <div id="city" class="layer"></div>
   <div id="foreground" class="layer"></div>
 </div>
 
@@ -22,6 +23,7 @@ const mountains = document.getElementById("mountains");
 const foreground = document.getElementById("foreground");
 const scene = document.getElementById("scene");
 const btn = document.getElementById("btn");
+const city = document.getElementById("city");
 
 let camX = 0;
 let camY = 0;
@@ -127,6 +129,11 @@ function update() {
   foreground.style.transform = `
     translate3d(${baseX * 1}px, ${baseY * 1}px, 0)
     scale(${zoom})
+  `;
+  
+  city.style.transform = `
+  translate3d(${baseX * 0.7}px, ${baseY * 0.7}px, 0)
+  scale(${zoom})
   `;
 
   requestAnimationFrame(update);
