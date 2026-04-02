@@ -1,0 +1,42 @@
+/* style.css */
+
+/* Body et scène */
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #95BCCB;
+  touch-action: none;
+}
+
+#scene {
+  position: absolute;
+  width: 3000px;
+  height: 2000px;
+  transform-origin: 0 0;
+}
+
+/* Couches */
+.layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+
+#sky { background-image: url('sky.png'); z-index: 1; }
+#mountains { background-image: url('mountains.png'); z-index: 2; }
+#foreground { background-image: url('foreground.png'); z-index: 3; }
+
+/* Bouton noir */
+#btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: black;
+  color: white;
+  padding: 10px;
+  border: none;
+  z-index: 10;
+}
