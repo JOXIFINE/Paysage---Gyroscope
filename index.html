@@ -3,41 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <title>Paysage Gyroscope</title>
+
 <style>
 body {
   margin: 0;
   overflow: hidden;
-  background: #87CEEB;
-  font-family: sans-serif;
 }
 
+/* Couches du paysage */
 .layer {
   position: absolute;
   width: 200%;
   height: 200%;
   background-size: cover;
   background-repeat: no-repeat;
-  transition: transform 0.05s ease-out; /* Lissage mouvement */
+  transition: transform 0.05s ease-out;
 }
 
 #sky { background-image: url('sky.png'); z-index: 1; }
 #mountains { background-image: url('mountains.png'); top: 30%; z-index: 2; }
 #foreground { background-image: url('foreground.png'); top: 60%; z-index: 3; }
 
-#message {
+/* Bouton noir */
+#startBtn {
   position: fixed;
-  top: 20px;
+  bottom: 20px;
   left: 20px;
-  background: rgba(255,255,255,0.9);
-  padding: 10px;
-  border: 1px solid black;
+  padding: 10px 14px;
+  background: black;
+  color: white;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
   z-index: 10;
+  border-radius: 6px;
 }
 </style>
 </head>
+
 <body>
 
-<div id="message">Autorisez le gyroscope pour que le paysage bouge.</div>
+<button id="startBtn">Activer le gyroscope</button>
 
 <div id="sky" class="layer"></div>
 <div id="mountains" class="layer"></div>
@@ -47,7 +53,7 @@ body {
 const sky = document.getElementById("sky");
 const mountains = document.getElementById("mountains");
 const foreground = document.getElementById("foreground");
-const message = document.getElementById("message");
+const button = document.getElementById("startBtn");
 
 let lastX = 0, lastY = 0;
 
@@ -55,7 +61,7 @@ function handleOrientation(event) {
   const x = event.gamma;
   const y = event.beta;
 
-  // Lissage du mouvement
+  // Lissage
   lastX += (x - lastX) * 0.1;
   lastY += (y - lastY) * 0.1;
 
@@ -64,33 +70,25 @@ function handleOrientation(event) {
   foreground.style.transform = `translate(${lastX * 6}px, ${lastY * 4}px)`;
 }
 
-// Fonction pour activer le gyroscope
 function enableGyro() {
   if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
     DeviceOrientationEvent.requestPermission()
       .then(response => {
         if (response === "granted") {
           window.addEventListener("deviceorientation", handleOrientation);
-          message.style.display = "none";
+          button.style.display = "none"; // cache le bouton après activation
         } else {
-          message.innerText = "Permission refusée. Impossible d’utiliser le gyroscope.";
+          alert("Permission refusée");
         }
       })
-      .catch(err => {
-        message.innerText = "Erreur : " + err;
-      });
+      .catch(console.error);
   } else {
-    // Android ou navigateur non iOS
     window.addEventListener("deviceorientation", handleOrientation);
-    message.style.display = "none";
+    button.style.display = "none";
   }
 }
 
-// Demande de permission immédiatement après le chargement
-window.addEventListener("load", () => {
-  // iOS 13+ nécessite un clic, donc on simule un petit clic automatique avec un prompt
-  enableGyro();
-});
+button.addEventListener("click", enableGyro);
 </script>
 
 </body>
