@@ -28,7 +28,8 @@ body {
 
 #sky { background-image: url('sky.png'); z-index: 1; }
 #mountains { background-image: url('mountains.png'); z-index: 2; }
-#foreground { background-image: url('foreground.png'); z-index: 3; }
+#foreground { background-image: url('foreground.png'); z-index: 4; }
+#city { background-image: url('city.png'); z-index: 3;}
 
 /* Bouton noir */
 #btn {
