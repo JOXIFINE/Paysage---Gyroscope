@@ -3,48 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Paysage interactif</title>
-
-<style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #95BCCB;
-  touch-action: none;
-}
-
-/* scène globale */
-#scene {
-  position: absolute;
-  width: 3000px;
-  height: 2000px;
-  transform-origin: 0 0;
-}
-
-/* couches */
-.layer {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-repeat: no-repeat;
-}
-
-#sky { background-image: url('sky.png'); z-index: 1; }
-#mountains { background-image: url('mountains.png'); z-index: 2; }
-#foreground { background-image: url('foreground.png'); z-index: 3; }
-
-/* bouton */
-#btn {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  background: black;
-  color: white;
-  padding: 10px;
-  border: none;
-  z-index: 10;
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -58,6 +17,9 @@ body {
 </div>
 
 <script>
+  const sky = document.getElementById("sky");
+const mountains = document.getElementById("mountains");
+const foreground = document.getElementById("foreground");
 const scene = document.getElementById("scene");
 const btn = document.getElementById("btn");
 
@@ -144,16 +106,26 @@ window.addEventListener("touchend", () => {
 // ---------------- RENDER LOOP ----------------
 function update() {
 
-  // LISSAGE GYRO (clé de la fluidité)
+  // LISSAGE GYRO
   smoothGX += (gyroX - smoothGX) * 0.08;
   smoothGY += (gyroY - smoothGY) * 0.08;
 
-  const finalX = camX + smoothGX * 5;
-  const finalY = camY + smoothGY * 5;
+  const baseX = camX + smoothGX * 5;
+  const baseY = camY + smoothGY * 5;
 
-  // GPU acceleration
-  scene.style.transform = `
-    translate3d(${finalX}px, ${finalY}px, 0)
+  // PARALLAXE
+  sky.style.transform = `
+    translate3d(${baseX * 0.2}px, ${baseY * 0.2}px, 0)
+    scale(${zoom})
+  `;
+
+  mountains.style.transform = `
+    translate3d(${baseX * 0.5}px, ${baseY * 0.5}px, 0)
+    scale(${zoom})
+  `;
+
+  foreground.style.transform = `
+    translate3d(${baseX * 1}px, ${baseY * 1}px, 0)
     scale(${zoom})
   `;
 
