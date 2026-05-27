@@ -5,88 +5,116 @@ const foreground = document.getElementById("foreground");
 const city = document.getElementById("city");
 const btn = document.getElementById("btn");
 
-// position caméra
 let camX = 0;
 let camY = 0;
 
-// gyroscope brut
 let gyroX = 0;
 let gyroY = 0;
 
-// calibration (important pour éviter les sauts)
-let baseGX = null;
-let baseGY = null;
-
-// valeurs lissées
 let smoothGX = 0;
 let smoothGY = 0;
 
+let gyroEnabled = false;
+
+// calibration
+let baseGX = null;
+let baseGY = null;
+
 // ---------------- GYRO ----------------
 function handleOrientation(e) {
-  let x = e.gamma || 0;
-  let y = e.beta || 0;
+  if (!gyroEnabled) return;
 
-  // calibration initiale
-  if (baseGX === null) {
+  const x = typeof e.gamma === "number" ? e.gamma : 0;
+  const y = typeof e.beta === "number" ? e.beta : 0;
+
+  if (baseGX === null || baseGY === null) {
     baseGX = x;
     baseGY = y;
   }
 
-  // valeurs relatives (clé du comportement continu)
   gyroX = x - baseGX;
   gyroY = y - baseGY;
 }
 
-function enableGyro() {
-  if (typeof DeviceOrientationEvent !== "undefined" &&
-      typeof DeviceOrientationEvent.requestPermission === "function") {
+async function enableGyro() {
+  try {
+    // iOS permission
+    if (
+      typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function"
+    ) {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== "granted") return;
+    }
 
-    DeviceOrientationEvent.requestPermission()
-      .then(res => {
-        if (res === "granted") {
-          window.addEventListener("deviceorientation", handleOrientation, true);
-          btn.style.display = "none";
-        }
-      });
+    gyroEnabled = true;
 
-  } else {
     window.addEventListener("deviceorientation", handleOrientation, true);
     btn.style.display = "none";
+
+  } catch (err) {
+    console.log("Gyro not available or denied", err);
   }
 }
 
 btn.addEventListener("click", enableGyro);
 
-// ---------------- BLOQUER SCROLL / ZOOM ----------------
-document.body.addEventListener("touchmove", (e) => {
-  e.preventDefault();
-}, { passive: false });
+// ---------------- SAFE TOUCH (optionnel, léger) ----------------
+// On NE bloque PAS le scroll global pour éviter écran cassé
+let isDragging = false;
+let lastX = 0;
+let lastY = 0;
 
-// ---------------- RENDER LOOP ----------------
+window.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    lastX = e.touches[0].clientX;
+    lastY = e.touches[0].clientY;
+  }
+});
+
+window.addEventListener("touchmove", (e) => {
+  if (!isDragging || e.touches.length !== 1) return;
+
+  const dx = e.touches[0].clientX - lastX;
+  const dy = e.touches[0].clientY - lastY;
+
+  camX += dx;
+  camY += dy;
+
+  lastX = e.touches[0].clientX;
+  lastY = e.touches[0].clientY;
+});
+
+window.addEventListener("touchend", () => {
+  isDragging = false;
+});
+
+// ---------------- LOOP ----------------
 function update() {
 
-  // lissage
+  // gyro lissé
   smoothGX += (gyroX - smoothGX) * 0.08;
   smoothGY += (gyroY - smoothGY) * 0.08;
 
-  // gyro → mouvement continu (sans "reset" quand on tourne le téléphone)
+  // mouvement combiné (gyro + drag)
   camX += smoothGX * 0.02;
   camY += smoothGY * 0.02;
 
-  const baseX = camX;
-  const baseY = camY;
+  const x = camX;
+  const y = camY;
 
   sky.style.transform =
-    `translate3d(${baseX * 0.2}px, ${baseY * 0.2}px, 0) scale(1)`;
+    `translate3d(${x * 0.2}px, ${y * 0.2}px, 0) scale(1)`;
 
   mountains.style.transform =
-    `translate3d(${baseX * 0.5}px, ${baseY * 0.5}px, 0) scale(1)`;
+    `translate3d(${x * 0.5}px, ${y * 0.5}px, 0) scale(1)`;
 
   city.style.transform =
-    `translate3d(${baseX * 0.7}px, ${baseY * 0.7}px, 0) scale(1)`;
+    `translate3d(${x * 0.7}px, ${y * 0.7}px, 0) scale(1)`;
 
   foreground.style.transform =
-    `translate3d(${baseX * 1}px, ${baseY * 1}px, 0) scale(1)`;
+    `translate3d(${x}px, ${y}px, 0) scale(1)`;
 
   requestAnimationFrame(update);
 }
