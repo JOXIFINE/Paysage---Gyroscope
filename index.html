@@ -3,61 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Paysage gyroscope</title>
+
+<title>Paysage fluide gyroscope</title>
 
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    height: 100%;
-    background: #000;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+  background: black;
+}
 
-  #btn {
-    position: fixed;
-    z-index: 10;
-    top: 20px;
-    left: 20px;
-    padding: 10px 15px;
-    font-size: 16px;
-  }
+#btn {
+  position: fixed;
+  z-index: 10;
+  top: 20px;
+  left: 20px;
+  padding: 10px 15px;
+}
 
-  #scene {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
+#scene {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
-  .layer {
-    position: absolute;
-    width: 120%;
-    height: 120%;
-    left: -10%;
-    top: -10%;
-    will-change: transform;
-  }
+.layer {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  left: -10%;
+  top: -10%;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
 
-  #sky {
-    background: linear-gradient(#4aa3ff, #cceeff);
-    z-index: 1;
-  }
+/* 👉 MET DES IMAGES ICI */
+#sky {
+  background-image: url("sky.png");
+  z-index: 1;
+}
 
-  #mountains {
-    background: linear-gradient(#3a6b3a, #1f3d1f);
-    z-index: 2;
-  }
+#mountains {
+  background-image: url("mountains.png");
+  z-index: 2;
+}
 
-  #city {
-    background: linear-gradient(#555, #222);
-    z-index: 3;
-  }
+#city {
+  background-image: url("city.png");
+  z-index: 3;
+}
 
-  #foreground {
-    background: linear-gradient(#2b2b2b, #000);
-    z-index: 4;
-  }
+#foreground {
+  background-image: url("foreground.png");
+  z-index: 4;
+}
 </style>
 </head>
 
@@ -74,21 +77,31 @@
 
 <script>
 const btn = document.getElementById("btn");
-const sky = document.getElementById("sky");
-const mountains = document.getElementById("mountains");
-const city = document.getElementById("city");
-const foreground = document.getElementById("foreground");
 
-// caméra
+const layers = {
+  sky: document.getElementById("sky"),
+  mountains: document.getElementById("mountains"),
+  city: document.getElementById("city"),
+  foreground: document.getElementById("foreground")
+};
+
+// position caméra (lissée)
 let camX = 0;
 let camY = 0;
 
-// gyroscope
-let gyroEnabled = false;
+// gyro brut
 let gx = 0;
 let gy = 0;
+
+// gyro lissé
+let sgx = 0;
+let sgy = 0;
+
+// calibration
 let baseX = null;
 let baseY = null;
+
+let gyroEnabled = false;
 
 // ---------------- GYRO ----------------
 function onOrientation(e) {
@@ -108,10 +121,7 @@ function onOrientation(e) {
 
 async function enableGyro() {
   try {
-    if (
-      typeof DeviceOrientationEvent !== "undefined" &&
-      typeof DeviceOrientationEvent.requestPermission === "function"
-    ) {
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
       const res = await DeviceOrientationEvent.requestPermission();
       if (res !== "granted") return;
     }
@@ -120,29 +130,41 @@ async function enableGyro() {
     window.addEventListener("deviceorientation", onOrientation, true);
     btn.style.display = "none";
 
-  } catch (err) {
-    console.log("Gyroscope error:", err);
+  } catch (e) {
+    console.log(e);
   }
 }
 
 btn.addEventListener("click", enableGyro);
 
-// ---------------- LOOP ----------------
-function update() {
+// ---------------- LOOP FLUIDE ----------------
+function animate() {
 
-  // inertie simple
-  camX += gx * 0.03;
-  camY += gy * 0.03;
+  // 🔥 SMOOTH GYRO (très important)
+  sgx += (gx - sgx) * 0.08;
+  sgy += (gy - sgy) * 0.08;
 
-  sky.style.transform = `translate3d(${camX * 0.2}px, ${camY * 0.2}px, 0)`;
-  mountains.style.transform = `translate3d(${camX * 0.5}px, ${camY * 0.5}px, 0)`;
-  city.style.transform = `translate3d(${camX * 0.8}px, ${camY * 0.8}px, 0)`;
-  foreground.style.transform = `translate3d(${camX}px, ${camY}px, 0)`;
+  // 🔥 inertie caméra
+  camX += sgx * 0.02;
+  camY += sgy * 0.02;
 
-  requestAnimationFrame(update);
+  // parallax doux
+  layers.sky.style.transform =
+    `translate3d(${camX * 0.2}px, ${camY * 0.2}px, 0)`;
+
+  layers.mountains.style.transform =
+    `translate3d(${camX * 0.4}px, ${camY * 0.4}px, 0)`;
+
+  layers.city.style.transform =
+    `translate3d(${camX * 0.7}px, ${camY * 0.7}px, 0)`;
+
+  layers.foreground.style.transform =
+    `translate3d(${camX}px, ${camY}px, 0)`;
+
+  requestAnimationFrame(animate);
 }
 
-update();
+animate();
 </script>
 
 </body>
