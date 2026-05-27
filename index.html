@@ -5,7 +5,7 @@
 <meta name="viewport"
       content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 
-<title>Paysage Gyroscope</title>
+<title>Paysage Gyroscope 360°</title>
 
 <style>
 html,
@@ -33,15 +33,15 @@ body{
     overflow:hidden;
 }
 
-/* Très grandes couches pour éviter les bords */
+/* Couche géante pour limiter l'apparition des bords */
 .layer{
     position:absolute;
 
-    width:220%;
-    height:220%;
+    width:300%;
+    height:300%;
 
-    left:-60%;
-    top:-60%;
+    left:-100%;
+    top:-100%;
 
     background-position:center;
     background-size:cover;
@@ -52,9 +52,9 @@ body{
     backface-visibility:hidden;
 }
 
-/* Remplace par tes images locales */
+/* Images locales */
 #sky{
-    background-image:url("sky.jpg");
+    background-image:url("sky.png");
     z-index:1;
 }
 
@@ -97,19 +97,24 @@ const foreground = document.getElementById("foreground");
 
 let gyroEnabled = false;
 
-// gyro brut
+// Inclinaison
 let gx = 0;
 let gy = 0;
 
-// gyro lissé
+// Rotation continue
+let accumulatedAlpha = 0;
+let lastAlpha = null;
+
+// Valeurs lissées
 let smoothGX = 0;
 let smoothGY = 0;
+let smoothAlpha = 0;
 
-// position caméra
+// Caméra
 let camX = 0;
 let camY = 0;
 
-// calibration
+// Calibration
 let baseGamma = null;
 let baseBeta = null;
 
@@ -118,7 +123,8 @@ function handleOrientation(event){
     if(!gyroEnabled) return;
 
     const gamma = event.gamma ?? 0;
-    const beta = event.beta ?? 0;
+    const beta  = event.beta  ?? 0;
+    const alpha = event.alpha ?? 0;
 
     if(baseGamma === null){
         baseGamma = gamma;
@@ -127,6 +133,19 @@ function handleOrientation(event){
 
     gx = gamma - baseGamma;
     gy = beta - baseBeta;
+
+    // Gestion rotation continue alpha
+    if(lastAlpha !== null){
+
+        let delta = alpha - lastAlpha;
+
+        if(delta > 180) delta -= 360;
+        if(delta < -180) delta += 360;
+
+        accumulatedAlpha += delta;
+    }
+
+    lastAlpha = alpha;
 }
 
 async function enableGyro(){
@@ -156,7 +175,8 @@ async function enableGyro(){
 
         btn.style.display = "none";
 
-    }catch(err){
+    }
+    catch(err){
         console.error(err);
     }
 }
@@ -165,17 +185,23 @@ btn.addEventListener("click", enableGyro);
 
 function animate(){
 
-    // Lissage gyro plus rapide
+    // Lissage
     smoothGX += (gx - smoothGX) * 0.15;
     smoothGY += (gy - smoothGY) * 0.15;
 
-    // Déplacement maximum
-    const maxMove = 800;
+    smoothAlpha +=
+        (accumulatedAlpha - smoothAlpha) * 0.08;
 
-    const targetX = (smoothGX / 45) * maxMove;
-    const targetY = (smoothGY / 45) * maxMove;
+    // Sensibilité inclinaison
+    const tiltX = smoothGX * 12;
+    const tiltY = smoothGY * 10;
 
-    // Inertie caméra
+    // Sensibilité rotation complète
+    const turnX = smoothAlpha * 8;
+
+    const targetX = turnX + tiltX;
+    const targetY = tiltY;
+
     camX += (targetX - camX) * 0.12;
     camY += (targetY - camY) * 0.12;
 
